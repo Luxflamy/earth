@@ -1,0 +1,137 @@
+<!doctype html>
+<html>
+  <head>
+    <title>3D Rotating Earth with Stars</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+      // 初始化场景
+      const scene = new THREE.Scene()
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000,
+      )
+      const renderer = new THREE.WebGLRenderer({ antialias: true })
+      renderer.setSize(window.innerWidth, window.innerHeight)
+      renderer.setClearColor(0x000000)
+      document.body.appendChild(renderer.domElement)
+
+      // 创建星空背景
+      function createStars() {
+        const starsGeometry = new THREE.BufferGeometry()
+        const starsMaterial = new THREE.PointsMaterial({
+          color: 0xffffff,
+          size: 0.05,
+          transparent: true,
+        })
+
+        const starsVertices = []
+        for (let i = 0; i < 10000; i++) {
+          const x = (Math.random() - 0.5) * 2000
+          const y = (Math.random() - 0.5) * 2000
+          const z = (Math.random() - 0.5) * 2000
+          starsVertices.push(x, y, z)
+        }
+
+        starsGeometry.setAttribute(
+          "position",
+          new THREE.Float32BufferAttribute(starsVertices, 3),
+        )
+        const stars = new THREE.Points(starsGeometry, starsMaterial)
+        scene.add(stars)
+      }
+
+      createStars()
+
+      // 添加光源
+      const ambientLight = new THREE.AmbientLight(0x404040)
+      scene.add(ambientLight)
+
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 1)
+      directionalLight.position.set(5, 3, 5)
+      scene.add(directionalLight)
+
+      // 创建地球
+      const geometry = new THREE.SphereGeometry(1, 64, 64)
+      const textureLoader = new THREE.TextureLoader()
+      const earthTexture = textureLoader.load(
+        "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg",
+      )
+      const bumpMap = textureLoader.load(
+        "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_normal_2048.jpg",
+      )
+      const specularMap = textureLoader.load(
+        "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_specular_2048.jpg",
+      )
+
+      const material = new THREE.MeshPhongMaterial({
+        map: earthTexture,
+        bumpMap: bumpMap,
+        bumpScale: 0.05,
+        specularMap: specularMap,
+        specular: new THREE.Color("grey"),
+        shininess: 5,
+      })
+
+      const earth = new THREE.Mesh(geometry, material)
+      scene.add(earth)
+
+      // 添加云层
+      const cloudGeometry = new THREE.SphereGeometry(1.01, 64, 64)
+      const cloudTexture = textureLoader.load(
+        "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_clouds_1024.png",
+      )
+      const cloudMaterial = new THREE.MeshPhongMaterial({
+        map: cloudTexture,
+        transparent: true,
+        opacity: 0.4,
+      })
+
+      const clouds = new THREE.Mesh(cloudGeometry, cloudMaterial)
+      scene.add(clouds)
+
+      // 设置相机位置
+      camera.position.z = 2
+
+      // 添加轨道控制
+      const controls = new THREE.OrbitControls(camera, renderer.domElement)
+      controls.enableDamping = true
+      controls.dampingFactor = 0.05
+
+      // 动画循环
+      function animate() {
+        requestAnimationFrame(animate)
+
+        // 自动旋转
+        earth.rotation.y += 0.002
+        clouds.rotation.y += 0.0025 // 云层旋转速度稍快
+
+        controls.update()
+        renderer.render(scene, camera)
+      }
+
+      // 窗口大小调整处理
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight
+        camera.updateProjectionMatrix()
+        renderer.setSize(window.innerWidth, window.innerHeight)
+      })
+
+      animate()
+    </script>
+  </body>
+</html>
